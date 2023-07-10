@@ -1,0 +1,82 @@
+CODE
+#1 IMPORTING NECESSARY LIBRARIES
+import cv2
+import serial
+import pyfirmata
+from cvzone.HandTrackingModule
+import HandDetector
+import time
+ #SET UP ARDUINO BOARD USING PYFIRMATA
+board =pyfirmata.Arduino('COM87')
+it = pyfirmata.util.Iterator(board)
+it.start()
+# DEFINE ARDUINO PINS
+m1a_pin = board.get_pin('d:9:o')
+m1b_pin = board.get_pin('d:10:o')
+m2a_pin = board.get_pin('d:11:o')
+m2b_pin = board.get_pin('d:12:o')
+# SET UP HAND DETECTOR
+detector= HandDetector(detectionCon=0.5, maxHands=1)
+# OPEN VIDEO CAPTURE
+cap = cv2.VideoCapture(0)
+# FINGER COUNT DISPLAY VARIABLES
+display_timer = 0
+display_duration = 2 # Adjust the duration (in
+seconds) to display the finger count
+while True:
+ ret, frame = cap.read()
+ frame = cv2.flip(frame, 1)
+ )
+# HAND DETECTION AND FINGER COUNTING
+ hands, frame = detector.findHands(frame)
+ if not hands:
+ count = 0
+ else:
+ hands1 = hands[0]
+ fingers = detector.fingersUp(hands1)
+ count = fingers.count(1)
+# CONTROL ACTIONS BASED ON FINGER COUNT
+
+if count == 1: # Forward
+ m1a_pin.write(1)
+ m1b_pin.write(0)
+ m2a_pin.write(1)
+ m2b_pin.write(0)
+ elif count == 2: # Backward
+ m1a_pin.write(0)
+ m1b_pin.write(1)
+ m2a_pin.write(0)
+ m2b_pin.write(1)
+ elif count == 3: # Left
+ m1a_pin.write(1)
+ m1b_pin.write(0)
+ m2a_pin.write(0)
+ m2b_pin.write(1)
+
+# DISPLAY THE FINGER COUNT FOR A BRIEF MOMENT
+ if display_timer > 0:
+ cv2.putText(frame, f'Finger count: {count}', (10, 50),
+cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+ display_timer -= 1
+elif count == 4: # Right
+ m1a_pin.write(0)
+ m1b_pin.write(1)
+ m2a_pin.write(1)
+ m2b_pin.write(0)
+ else:
+ m1a_pin.write(0)
+ m1b_pin.write(0)
+ m2a_pin.write(0)
+ m2b_pin.write(0
+ # DISPLAY THE FRAME
+ cv2.imshow('Hand Tracking', frame)
+# RESET DISPLAY TIMER IF FINGER COUNT CHANGES
+ if display_timer == 0 and count != 0:
+ display_timer = display_duration * 10
+# EXIT LOOP ON 'ESC' KEY PRESS
+ if cv2.waitKey(1) == 27:
+ break
+# RELEASE RESOURCES
+ cap.release()
+ cv2.destroyAllWindows()
+ board.exit() 
